@@ -1,0 +1,13 @@
+.env
+/tmp/chunks/
+costs.jsonl
+pipeline.log
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+dist/
+*.egg-info/
+.venv/
+fixtures/sample_stream.mp4
+fixtures/*.mp4

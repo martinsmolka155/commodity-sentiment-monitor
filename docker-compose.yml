@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    volumes:
+      - ./fixtures:/app/fixtures
+    environment:
+      - PYTHONUNBUFFERED=1
+    tty: true

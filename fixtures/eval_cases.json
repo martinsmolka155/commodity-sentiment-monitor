@@ -1,0 +1,82 @@
+[
+  {
+    "id": "case_01_opec_cut",
+    "transcript": "The OPEC plus alliance has just announced they will be cutting production by two million barrels per day starting next month. This is the largest cut since the pandemic era. Saudi Arabia's energy minister emphasized this is a proactive step to ensure market stability and prevent any potential oversupply situation.",
+    "expected_behavior": "directional",
+    "expected_commodity": "crude_oil_brent",
+    "expected_direction": "bullish",
+    "notes": "Based on OPEC+ production cut announcements. Clear supply reduction = bullish oil, with Brent as the primary benchmark for broad international supply events."
+  },
+  {
+    "id": "case_02_fed_hawkish",
+    "transcript": "Chairman Powell was very clear today. He said the committee believes that further tightening of monetary policy will likely be appropriate. The dot plot now shows two additional twenty five basis point rate hikes expected this year, which is significantly more hawkish than what markets had priced in. Treasury yields surged immediately after the statement.",
+    "expected_behavior": "directional",
+    "expected_commodity": "gold",
+    "expected_direction": "bearish",
+    "notes": "Hawkish Fed = higher rates = stronger dollar = bearish gold."
+  },
+  {
+    "id": "case_03_fed_dovish",
+    "transcript": "The Federal Reserve has decided to hold rates steady and the chair indicated the committee is now closely monitoring downside risks to the economy. He mentioned that if conditions deteriorate further, they are prepared to adjust the stance of monetary policy to support economic activity. Markets are now pricing in three rate cuts by year end.",
+    "expected_behavior": "directional",
+    "expected_commodity": "gold",
+    "expected_direction": "bullish",
+    "notes": "Dovish Fed = rate cuts expected = weaker dollar = bullish gold."
+  },
+  {
+    "id": "case_04_usda_crop_damage",
+    "transcript": "The latest USDA World Agricultural Supply and Demand Estimates report paints a grim picture for winter wheat. Severe drought conditions across Kansas and Oklahoma have reduced projected yields by nearly eighteen percent. The department now estimates ending stocks will fall to their lowest level in nine years, well below analyst expectations.",
+    "expected_behavior": "directional",
+    "expected_commodity": "wheat",
+    "expected_direction": "bullish",
+    "notes": "Crop damage + low stocks = supply shock = bullish wheat."
+  },
+  {
+    "id": "case_05_iran_sanctions",
+    "transcript": "The State Department has announced a new round of sanctions targeting Iran's oil export infrastructure. These sanctions specifically target shipping companies and port facilities used to export Iranian crude. Officials say this could remove up to one million barrels per day of Iranian oil from the global market. European buyers will need to find alternative sources.",
+    "expected_behavior": "directional",
+    "expected_commodity": "crude_oil_brent",
+    "expected_direction": "bullish",
+    "notes": "Iran sanctions removing supply = bullish Brent (international benchmark)."
+  },
+  {
+    "id": "case_06_china_demand_weak",
+    "transcript": "China's manufacturing PMI came in at forty seven point three, well below the fifty mark that separates expansion from contraction. This is the third consecutive month of declining factory activity. Copper inventories at Shanghai warehouses have surged to their highest level since twenty twenty one, suggesting that industrial demand is significantly weaker than expected.",
+    "expected_behavior": "directional",
+    "expected_commodity": "copper",
+    "expected_direction": "bearish",
+    "notes": "Weak China PMI + rising inventories = demand destruction = bearish copper."
+  },
+  {
+    "id": "case_07_warm_winter",
+    "transcript": "The National Weather Service long range forecast is now calling for significantly above average temperatures across the eastern United States through February. Meteorologists say this El Nino pattern could result in one of the warmest winters on record for major heating demand regions. Natural gas storage levels are already fourteen percent above the five year average.",
+    "expected_behavior": "directional",
+    "expected_commodity": "natural_gas",
+    "expected_direction": "bearish",
+    "notes": "Warm winter forecast + high storage = low heating demand = bearish nat gas."
+  },
+  {
+    "id": "case_08_silver_industrial",
+    "transcript": "The solar industry is driving unprecedented demand for silver. New data shows global solar panel installations are up forty two percent year over year, and each gigawatt of solar capacity requires approximately thirty tons of silver. Analysts at the Silver Institute project that industrial demand alone will exceed mining supply for the second consecutive year.",
+    "expected_behavior": "directional",
+    "expected_commodity": "silver",
+    "expected_direction": "bullish",
+    "notes": "Surging solar demand exceeding supply = bullish silver."
+  },
+  {
+    "id": "case_09_neutral_chitchat",
+    "transcript": "Welcome back to the show everyone. I hope you all had a wonderful weekend. Before we get into the markets, I just want to mention our upcoming conference in Miami next month. It's going to be a great event with some fantastic speakers. Make sure to register early because spots are filling up fast. Now let's check in with our correspondent in London.",
+    "expected_behavior": "empty",
+    "expected_commodity": null,
+    "expected_direction": "neutral",
+    "notes": "Pure small talk with no commodity or market content whatsoever."
+  },
+  {
+    "id": "case_10_ambiguous",
+    "transcript": "The oil market is really caught between two forces right now. On one hand you have OPEC maintaining production discipline and geopolitical tensions in the Middle East supporting prices. But on the other hand demand from China has been disappointing and US shale production keeps hitting new records. It's really a tug of war and honestly it could go either way from here.",
+    "expected_behavior": "neutral_signal",
+    "expected_commodity": "crude_oil_brent",
+    "expected_direction": "neutral",
+    "notes": "Explicitly mixed oil signals with bullish and bearish factors offsetting. Should resolve to a neutral Brent signal rather than an empty result."
+  }
+]
