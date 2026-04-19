@@ -11,7 +11,7 @@ OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
 SLACK_WEBHOOK_URL: str = os.environ.get("SLACK_WEBHOOK_URL", "")
 
 WHISPER_MODEL: str = "whisper-large-v3-turbo"
-LLM_MODEL: str = os.environ.get("LLM_MODEL", "gpt-5-mini")
+LLM_MODEL: str = os.environ.get("LLM_MODEL", "gpt-4o-mini")
 LLM_PROVIDER: str = os.environ.get("LLM_PROVIDER", "openai")  # "openai" or "groq"
 
 CHUNK_DURATION_SECONDS: int = int(os.environ.get("CHUNK_DURATION", "10"))

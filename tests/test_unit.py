@@ -227,7 +227,7 @@ def _mock_openai_response(signals_data: list[dict]) -> MagicMock:
 
 
 @patch("app.llm.scorer.OPENAI_API_KEY", "test-key")
-@patch("app.llm.scorer.LLM_MODEL", "gpt-5-mini")
+@patch("app.llm.scorer.LLM_MODEL", "gpt-4o-mini")
 def test_score_transcript_openai_mocked():
     from app.llm.scorer import _score_openai
 
@@ -267,7 +267,7 @@ def test_score_transcript_openai_mocked():
 
 
 @patch("app.llm.scorer.OPENAI_API_KEY", "test-key")
-@patch("app.llm.scorer.LLM_MODEL", "gpt-5-mini")
+@patch("app.llm.scorer.LLM_MODEL", "gpt-4o-mini")
 def test_score_transcript_neutral_no_signals():
     from app.llm.scorer import _score_openai
 
