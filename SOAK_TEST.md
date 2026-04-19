@@ -40,7 +40,7 @@ The pipeline processed all 225 chunks (37 minutes of audio) without interruption
 
 ## Test Run 3: Evaluation Harness — GPT-4o-mini
 
-**Mode:** Offline eval — 10 sequential LLM scoring calls via OpenAI API (gpt-4o-mini)
+**Mode:** Offline eval — 10 sequential LLM scoring calls via OpenAI API (gpt-5-mini)
 **Duration:** ~35 seconds total
 **Result:** All 10 cases processed successfully, 100% overall accuracy (direction + behavior + commodity)
 **API cost:** ~$0.003

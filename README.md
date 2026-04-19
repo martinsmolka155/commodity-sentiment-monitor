@@ -66,7 +66,7 @@ docker compose run app uv run python -m app.eval.run
 | `GROQ_API_KEY` | Yes | Groq API key for Whisper STT |
 | `OPENAI_API_KEY` | Yes | OpenAI API key for GPT-4o-mini scoring |
 | `LLM_PROVIDER` | No | `openai` (default) or `groq` |
-| `LLM_MODEL` | No | Model ID (default: `gpt-4o-mini`) |
+| `LLM_MODEL` | No | Model ID (default: `gpt-5-mini`) |
 | `STREAM_URL` | No | Live stream URL (YouTube, Twitch, HLS, RTMP). If set, overrides INPUT_FILE. |
 | `INPUT_FILE` | No | Path to local MP4 (default: `fixtures/sample_stream.mp4`). Used when STREAM_URL is empty. |
 | `CHUNK_DURATION` | No | Audio chunk length in seconds (default: `10`) |
