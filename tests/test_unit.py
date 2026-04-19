@@ -505,3 +505,29 @@ def test_file_stream_produce_chunks_realtime_mode_sleeps(tmp_path: Path):
                 asyncio.run(file_stream.produce_chunks(queue))
 
     assert sleeps == [file_stream.CHUNK_DURATION_SECONDS]
+
+
+# ---------------------------------------------------------------------------
+# Dashboard telemetry
+# ---------------------------------------------------------------------------
+
+def test_dashboard_records_zero_signal_chunk_preview():
+    from app.dashboard.rich_ui import Dashboard
+
+    dashboard = Dashboard(asyncio.Queue())
+    transcript = Transcript(
+        chunk_id="live_0001",
+        chunk_start_seconds=10.0,
+        text="Gold is being mentioned, but the speaker gives no clear directional signal right now.",
+        words=[],
+    )
+
+    dashboard.record_stt_result(transcript, 1.23)
+    dashboard.record_scoring_result(transcript, [], 0.67)
+
+    assert dashboard._processed_chunks == 1
+    assert dashboard._zero_signal_chunks == 1
+    assert dashboard._last_chunk_id == "live_0001"
+    assert "Gold is being mentioned" in dashboard._last_transcript_preview
+    assert dashboard._last_stt_latency == pytest.approx(1.23)
+    assert dashboard._last_llm_latency == pytest.approx(0.67)

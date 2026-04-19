@@ -61,6 +61,7 @@ async def stt_worker(
             stt_latency = time.monotonic() - t0
             if ENABLE_DIARIZATION:
                 transcript = enrich_transcript(transcript)
+            dashboard.record_stt_result(transcript, stt_latency)
             await transcript_queue.put(transcript)
             logger.info("STT done: %s (%d words, %.1fs latency)", transcript.chunk_id, len(transcript.words), stt_latency)
         except Exception:
@@ -83,6 +84,7 @@ async def llm_worker(
             t0 = time.monotonic()
             signals = await asyncio.to_thread(score_transcript, transcript)
             llm_latency = time.monotonic() - t0
+            dashboard.record_scoring_result(transcript, signals, llm_latency)
             for signal in signals:
                 await signal_queue.put(signal)
                 if should_notify(signal):

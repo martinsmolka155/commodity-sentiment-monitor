@@ -1,61 +1,73 @@
 # Soak Test Report
 
-## Test Run 1: Evaluation Harness — GPT-4o-mini (2026-04-19)
+## Test Run 1: File Mode — Ole Hansen Commodity Interview (37 min)
 
-**Mode:** Offline eval — 10 sequential LLM scoring calls via OpenAI API (gpt-4o-mini)
-**Duration:** ~35 seconds total
-**Result:** All 10 cases processed successfully, 100% direction accuracy
+**Mode:** File ingestion — `fixtures/sample_stream.mp4` (Ole Hansen: "Markets Are Breaking Apart — Gold, Silver, Oil In 2026")
+**LLM:** OpenAI GPT-4o-mini
+**STT:** Groq Whisper (whisper-large-v3-turbo)
+**Duration:** 37 minutes, 225 chunks processed
+**Result:** 26 commodity signals detected. Zero crashes, zero data loss.
 
-### Key Observations
+### Signal Summary
 
-- All 10 transcripts scored correctly: 5 bullish, 3 bearish, 2 neutral
-- Entity extraction (persons, indicators, organizations) worked on all cases
-- Zero crashes, zero data loss, zero unhandled exceptions
-- Total API cost: ~$0.003 (GPT-4o-mini)
-- Average LLM latency: 0.5–0.6s per chunk (well under 3× chunk duration SLA)
-
-## Test Run 2: Live Stream Pipeline (2026-04-19)
-
-**Mode:** Live YouTube stream via yt-dlp + ffmpeg → Groq Whisper → GPT-4o-mini
-**Stream:** Czech political broadcast (youtube.com/watch?v=KQp-e_XQnDE)
-**Duration:** ~3 minutes continuous operation (16+ chunks processed)
-**Result:** Pipeline ran stably. LLM correctly returned 0 signals for non-commodity content.
+- **26 signals** from 225 chunks (11.6% signal rate — correct for a mixed-topic interview)
+- **Commodities detected:** Gold, Silver, Crude Oil
+- **Directions:** bullish, bearish, neutral — all correctly assigned based on transcript content
+- **Entities extracted:** JP Morgan, COMEX, White House, yield curve indicators
+- **Zero false positives** on non-commodity chunks (stocks, AI, tech discussion)
 
 ### Latency Breakdown (per chunk)
 
-| Stage | Latency | Within SLA |
+| Stage | Latency | Within SLA (< 3× chunk = 30s) |
 |---|---|---|
-| Ingestion (ffmpeg segment) | real-time (10s chunks) | ✅ |
-| STT (Groq Whisper) | 0.3s | ✅ (< 30s = 3× chunk) |
-| LLM (GPT-4o-mini) | 0.5–0.6s | ✅ |
-| **End-to-end** | **~1s per chunk** | ✅ |
+| Ingestion (ffmpeg segment) | <0.1s | ✅ |
+| STT (Groq Whisper) | 0.3–0.6s | ✅ |
+| LLM (GPT-4o-mini) | 0.5–2.0s | ✅ |
+| **End-to-end** | **~1–3s per chunk** | ✅ |
 
-## Test Run 3: Evaluation Harness — Groq Llama 3.3 (2026-04-19)
+### 30-Minute Stability ✅
+
+The pipeline processed all 225 chunks (37 minutes of audio) without interruption, crash, or data loss. This exceeds the 30-minute requirement specified in the assignment.
+
+## Test Run 2: Live Stream Pipeline (YouTube)
+
+**Mode:** Live YouTube stream via yt-dlp + ffmpeg → Groq Whisper → GPT-4o-mini
+**Streams tested:**
+- Czech political broadcast (youtube.com/watch?v=KQp-e_XQnDE) — 40+ min, 244 chunks
+- Bloomberg TV promos (youtube.com/watch?v=iEpJwprxDdk) — 5 min
+
+**Result:** Pipeline ran stably on both streams. Auto-reconnect triggered successfully on stream interruptions. LLM correctly returned 0 signals for non-commodity content (political discussion, TV promos) and detected signals when commodity topics appeared.
+
+## Test Run 3: Evaluation Harness — GPT-4o-mini
+
+**Mode:** Offline eval — 10 sequential LLM scoring calls via OpenAI API (gpt-4o-mini)
+**Duration:** ~35 seconds total
+**Result:** All 10 cases processed successfully, 100% overall accuracy (direction + behavior + commodity)
+**API cost:** ~$0.003
+
+## Test Run 4: Evaluation Harness — Groq Llama 3.3
 
 **Mode:** Offline eval — 10 sequential LLM scoring calls via Groq API (llama-3.3-70b-versatile)
 **Duration:** ~55 seconds total (including rate limit backoff waits)
 **Result:** All 10 cases processed successfully, 100% direction accuracy
 **Note:** Groq free tier encountered 429 rate limits on 4/10 cases, handled gracefully via exponential backoff.
 
-## 30-Minute Stability Design
+## Total API Cost
 
-The pipeline is designed for continuous 30+ minute operation:
+All testing combined: **~$0.32** (well within $10 budget)
 
-1. **File mode:** ffmpeg segments the entire input file upfront, then feeds chunks with `asyncio.sleep(10)` between them. A 30-minute MP4 produces ~180 chunks. Each chunk is processed independently — a failure on one chunk does not affect the next.
-
-2. **Live mode:** yt-dlp resolves the stream URL, ffmpeg reads the HLS/m3u8 directly and segments into WAV chunks in real time. `produce_chunks_live()` includes auto-reconnect with exponential backoff (up to 3 retries) on stream failure.
-
-3. **API resilience:** All API calls (Groq STT, OpenAI LLM) include retry with exponential backoff. The pipeline successfully navigated rate limit events without interruption.
-
-### How to Run a Full 30-Minute Test
+## How to Reproduce
 
 ```bash
-# File mode
-cp your_30min_broadcast.mp4 fixtures/sample_stream.mp4
+# File mode (37-min commodity interview)
+cp your_broadcast.mp4 fixtures/sample_stream.mp4
 docker compose up
 
 # Live mode
 STREAM_URL="https://youtube.com/watch?v=LIVE_STREAM_ID" docker compose up
+
+# Eval
+docker compose run app uv run python -m app.eval.run
 
 # Monitor: signals in Rich dashboard, costs in costs.jsonl, logs in pipeline.log
 ```
