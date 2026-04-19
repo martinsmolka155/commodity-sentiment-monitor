@@ -201,11 +201,15 @@ dependencies = [
     { name = "groq" },
     { name = "openai" },
     { name = "pydantic" },
-    { name = "pytest" },
     { name = "python-dotenv" },
     { name = "rich" },
     { name = "yfinance" },
     { name = "yt-dlp" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -213,12 +217,14 @@ requires-dist = [
     { name = "groq", specifier = ">=0.13.0" },
     { name = "openai", specifier = ">=2.32.0" },
     { name = "pydantic", specifier = ">=2.10.0" },
-    { name = "pytest", specifier = ">=8.3.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "rich", specifier = ">=13.9.0" },
     { name = "yfinance", specifier = ">=0.2.0" },
     { name = "yt-dlp", specifier = ">=2024.0.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.3.0" }]
 
 [[package]]
 name = "curl-cffi"

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from app.config import COST_LOG_PATH
 logger = logging.getLogger(__name__)
 
 _log_path = Path(COST_LOG_PATH)
+_lock = threading.Lock()
 
 
 def log_cost(service: str, units: float, cost_usd: float, meta: dict | None = None) -> None:
@@ -23,17 +25,19 @@ def log_cost(service: str, units: float, cost_usd: float, meta: dict | None = No
     }
     if meta:
         entry["meta"] = meta
-    with _log_path.open("a") as f:
-        f.write(json.dumps(entry) + "\n")
+    with _lock:
+        with _log_path.open("a") as f:
+            f.write(json.dumps(entry) + "\n")
     logger.debug("Cost logged: %s $%.6f", service, cost_usd)
 
 
 def total_cost() -> float:
     """Sum all costs from the log file."""
-    if not _log_path.exists():
-        return 0.0
-    total = 0.0
-    for line in _log_path.read_text().strip().split("\n"):
-        if line:
-            total += json.loads(line).get("cost_usd", 0.0)
+    with _lock:
+        if not _log_path.exists():
+            return 0.0
+        total = 0.0
+        for line in _log_path.read_text().strip().split("\n"):
+            if line:
+                total += json.loads(line).get("cost_usd", 0.0)
     return total

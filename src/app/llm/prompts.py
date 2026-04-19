@@ -21,20 +21,20 @@ SYSTEM_PROMPT = """You are a senior commodity market analyst. Your task is to an
 - bearish — the commentary suggests downward price pressure (supply glut, demand weakness, risk-off sentiment, etc.)
 - neutral — the commentary mentions a commodity but with no clear directional impact, OR contains mixed/contradictory signals
 
-## Empty vs. Neutral Decision
-- Return an EMPTY signals list when the transcript is off-topic, contains only generic market chatter, mentions a commodity without a clear price implication, or the evidence is too weak to justify a signal.
-- Return a NEUTRAL signal only when the transcript contains a real commodity-relevant statement for a tracked commodity, but the directional evidence is explicitly mixed, contradictory, or balanced.
-- If confidence would be below 0.35, prefer returning an EMPTY signals list rather than a weak directional signal unless the transcript clearly contains offsetting commodity evidence.
+## When to Return Signals vs. Empty
+- Return an EMPTY signals list ONLY when the transcript contains absolutely no mention of any tracked commodity or commodity-relevant topic.
+- If any tracked commodity is mentioned with ANY directional hint (even indirect), report it as a signal with appropriate confidence.
+- Return a NEUTRAL signal when the transcript mentions a commodity but the directional evidence is mixed, contradictory, or balanced.
 
 ## Timeframes
 - short_term — impact expected within hours to days
 - medium_term — impact expected within weeks to months
 
 ## Confidence Calibration
-- 0.85–1.0: Explicit quantitative data or official announcement with direct commodity impact
-- 0.60–0.84: Clear directional commentary or causal link without hard data
-- 0.35–0.59: Indirect, partial, or mixed evidence
-- Below 0.35: Usually return an EMPTY signals list instead of a weak signal
+- 0.85–1.0: Explicit quantitative data or official announcement (e.g., "OPEC cuts by 2M bpd")
+- 0.60–0.84: Clear directional commentary without specific numbers (e.g., "record high oil prices")
+- 0.35–0.59: Indirect or speculative hints (e.g., "there are concerns about supply")
+- 0.10–0.34: Very weak or tangential mentions — still report if a tracked commodity is named
 
 ## Entity Extraction
 For each signal, extract mentioned_entities:
@@ -55,77 +55,73 @@ For each signal, extract mentioned_entities:
 9. When in doubt between bullish/bearish and neutral, prefer neutral.
 """
 
-TOOL_SCHEMA = {
-    "name": "report_signals",
-    "description": "Report all commodity-relevant signals found in the transcript. Return empty list if none.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "signals": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "commodity": {
-                            "type": "string",
-                            "enum": [
-                                "crude_oil_wti", "crude_oil_brent", "natural_gas",
-                                "gold", "silver", "wheat", "corn", "copper",
-                            ],
-                        },
-                        "direction": {
-                            "type": "string",
-                            "enum": ["bullish", "bearish", "neutral"],
-                        },
-                        "confidence": {
-                            "type": "number",
-                            "minimum": 0.0,
-                            "maximum": 1.0,
-                        },
-                        "rationale": {
-                            "type": "string",
-                            "description": "1-2 sentence explanation under 300 characters.",
-                        },
-                        "timeframe": {
-                            "type": "string",
-                            "enum": ["short_term", "medium_term"],
-                        },
-                        "mentioned_entities": {
-                            "type": "object",
-                            "description": "Key entities explicitly mentioned in the transcript",
-                            "properties": {
-                                "persons": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "Key persons copied exactly from the transcript, e.g. 'Jerome Powell' or 'Prince Abdulaziz'",
-                                },
-                                "indicators": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "Economic indicators copied exactly from the transcript: inventories, production cuts, PMI, crop yields, sanctions, weather forecasts",
-                                },
-                                "organizations": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "Organizations copied exactly from the transcript: OPEC, Fed, USDA, ECB, IMF",
-                                },
-                            },
-                            "required": ["persons", "indicators", "organizations"],
-                        },
-                        "raw_quote": {
-                            "type": "string",
-                            "description": "Exact verbatim quote from the transcript supporting the signal",
-                        },
+REPORT_SIGNALS_INPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "signals": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "commodity": {
+                        "type": "string",
+                        "enum": [
+                            "crude_oil_wti", "crude_oil_brent", "natural_gas",
+                            "gold", "silver", "wheat", "corn", "copper",
+                        ],
                     },
-                    "required": [
-                        "commodity", "direction", "confidence", "rationale",
-                        "timeframe", "mentioned_entities", "raw_quote",
-                    ],
+                    "direction": {
+                        "type": "string",
+                        "enum": ["bullish", "bearish", "neutral"],
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "rationale": {
+                        "type": "string",
+                        "description": "1-2 sentence explanation under 300 characters.",
+                    },
+                    "timeframe": {
+                        "type": "string",
+                        "enum": ["short_term", "medium_term"],
+                    },
+                    "mentioned_entities": {
+                        "type": "object",
+                        "description": "Key entities explicitly mentioned in the transcript",
+                        "properties": {
+                            "persons": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Key persons copied exactly from the transcript, e.g. 'Jerome Powell' or 'Prince Abdulaziz'",
+                            },
+                            "indicators": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Economic indicators copied exactly from the transcript: inventories, production cuts, PMI, crop yields, sanctions, weather forecasts",
+                            },
+                            "organizations": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Organizations copied exactly from the transcript: OPEC, Fed, USDA, ECB, IMF",
+                            },
+                        },
+                        "required": ["persons", "indicators", "organizations"],
+                    },
+                    "raw_quote": {
+                        "type": "string",
+                        "description": "Exact verbatim quote from the transcript supporting the signal",
+                    },
                 },
+                "required": [
+                    "commodity", "direction", "confidence", "rationale",
+                    "timeframe", "mentioned_entities", "raw_quote",
+                ],
             },
         },
-        "required": ["signals"],
     },
+    "required": ["signals"],
 }
 
 
@@ -145,7 +141,7 @@ def _make_strict(schema: dict | list) -> dict | list:
     return schema
 
 
-STRICT_TOOL_SCHEMA_INPUT = _make_strict(copy.deepcopy(TOOL_SCHEMA["input_schema"]))
+STRICT_TOOL_SCHEMA_INPUT = _make_strict(copy.deepcopy(REPORT_SIGNALS_INPUT_SCHEMA))
 
 TOOL_SCHEMA_OPENAI = {
     "type": "function",

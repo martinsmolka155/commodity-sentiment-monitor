@@ -17,7 +17,7 @@ graph LR
 
 The pipeline is built as three async workers connected by `asyncio.Queue`:
 
-1. **Ingestion** — Accepts a live stream URL (via yt-dlp: YouTube, Twitch, HLS, RTMP) or a local MP4 file. Audio is segmented into configurable-length WAV chunks (default 10s, 16 kHz mono) via ffmpeg. Live mode includes auto-reconnect with exponential backoff on stream failure.
+1. **Ingestion** — Accepts a live stream URL (via yt-dlp: YouTube, Twitch, HLS, RTMP) or a local MP4 file. Audio is segmented into configurable-length WAV chunks (default 10s, 16 kHz mono) via ffmpeg. Live mode includes auto-reconnect with exponential backoff on stream failure. File mode runs as fast as possible by default; set `FILE_MODE_REALTIME=true` to simulate live pacing for demos.
 2. **STT** — Each chunk is transcribed via the Groq Whisper API (`whisper-large-v3-turbo`) with word-level timestamps.
 3. **LLM Scoring** — The transcript is analyzed using structured tool calling (OpenAI GPT-4o-mini by default, or Groq Llama 3.3). The model acts as a commodity analyst, extracting signals with direction, confidence, timeframe, and rationale. In this implementation, `confidence` serves as the practical proxy for impact intensity: higher confidence corresponds to a stronger expected directional move.
 4. **Dashboard** — Signals are displayed in a Rich terminal table, refreshing on each new signal.
@@ -31,7 +31,8 @@ cd commodity-sentiment-monitor
 
 # 2. Copy env and fill in API keys
 cp .env.example .env
-# Edit .env: add GROQ_API_KEY (that's all you need for the free tier)
+# Edit .env: add GROQ_API_KEY for Whisper STT and OPENAI_API_KEY for default scoring
+# Optional: switch scorer to Groq via LLM_PROVIDER=groq
 
 # 3a. Run with a local MP4 file
 cp your_broadcast.mp4 fixtures/sample_stream.mp4
@@ -69,6 +70,7 @@ docker compose run app uv run python -m app.eval.run
 | `STREAM_URL` | No | Live stream URL (YouTube, Twitch, HLS, RTMP). If set, overrides INPUT_FILE. |
 | `INPUT_FILE` | No | Path to local MP4 (default: `fixtures/sample_stream.mp4`). Used when STREAM_URL is empty. |
 | `CHUNK_DURATION` | No | Audio chunk length in seconds (default: `10`) |
+| `FILE_MODE_REALTIME` | No | If `true`, local file mode sleeps between chunks to mimic a live stream (default: `false`) |
 | `SLACK_WEBHOOK_URL` | No | Slack webhook — sends alerts when signal confidence ≥ 0.8 |
 | `STT_LANGUAGE` | No | Whisper language code (default: `en`). Set to `cs` for Czech. |
 | `ENABLE_DIARIZATION` | No | Enable pause-based speaker diarization (default: `true`) |
@@ -179,6 +181,8 @@ See [TECHNICAL_DOC.md](TECHNICAL_DOC.md) for a detailed architecture overview, d
 ## Demo
 
 To record a demo: `asciinema rec demo.cast` while running `docker compose up`, then `asciinema play demo.cast` to replay.
+
+A ready-to-record walkthrough script is available in [DEMO_VIDEO_SCRIPT.md](DEMO_VIDEO_SCRIPT.md).
 
 ## Known Limitations
 

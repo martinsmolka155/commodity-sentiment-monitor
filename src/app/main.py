@@ -11,10 +11,11 @@ from app.config import ENABLE_DIARIZATION, INPUT_FILE, STREAM_URL
 from app.cost.tracker import total_cost
 from app.dashboard.rich_ui import Dashboard
 from app.diarization.pause_based import enrich_transcript
-from app.ingestion.file_stream import SENTINEL, produce_chunks
+from app.ingestion.file_stream import produce_chunks
 from app.ingestion.live_stream import produce_chunks_live
 from app.llm.scorer import score_transcript
 from app.notifications.slack import send_signal_alert, should_notify
+from app.sentinel import SENTINEL
 from app.stt.groq_whisper import transcribe_chunk
 
 LOG_FILE = "pipeline.log"

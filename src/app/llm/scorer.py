@@ -5,6 +5,8 @@ import json
 import logging
 import re
 import time
+from collections.abc import Callable
+from typing import TypeVar
 
 from app.config import (
     GROQ_API_KEY,
@@ -19,6 +21,7 @@ from app.llm.prompts import FEW_SHOT_MESSAGES_FUNCTION, SYSTEM_PROMPT, TOOL_SCHE
 from app.models import Signal, Transcript
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 def _normalize_whitespace(text: str) -> str:
@@ -70,6 +73,31 @@ def _build_user_message(transcript: Transcript) -> str:
         f"starts at {transcript.chunk_start_seconds:.1f}s):\n\n"
         f'"{speaker_text}"'
     )
+
+
+def _request_with_backoff(
+    provider_name: str,
+    request_fn: Callable[[], T],
+) -> T:
+    """Retry transient provider errors with exponential backoff."""
+    last_error: Exception | None = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            return request_fn()
+        except Exception as e:
+            last_error = e
+            delay = RETRY_BASE_DELAY * (2 ** attempt)
+            logger.warning(
+                "%s error (attempt %d/%d): %s. Retrying in %.1fs",
+                provider_name,
+                attempt + 1,
+                MAX_RETRIES,
+                e,
+                delay,
+            )
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(delay)
+    raise RuntimeError(f"{provider_name} failed after {MAX_RETRIES} retries") from last_error
 
 
 def _extract_signals(raw_signals: list[dict], transcript: Transcript) -> list[Signal]:
@@ -132,29 +160,18 @@ def _score_openai(transcript: Transcript) -> list[Signal]:
         {"role": "user", "content": user_message},
     ]
 
-    last_error: Exception | None = None
-    for attempt in range(MAX_RETRIES):
-        try:
-            response = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=messages,
-                tools=[TOOL_SCHEMA_OPENAI],
-                tool_choice={"type": "function", "function": {"name": "report_signals"}},
-                max_tokens=2048,
-                temperature=0.0,
-                top_p=1.0,
-            )
-            break
-        except Exception as e:
-            last_error = e
-            if "rate" in str(e).lower() or "429" in str(e):
-                raise
-            delay = RETRY_BASE_DELAY * (2 ** attempt)
-            logger.warning("OpenAI error (attempt %d/%d): %s. Retrying in %.1fs",
-                           attempt + 1, MAX_RETRIES, e, delay)
-            time.sleep(delay)
-    else:
-        raise RuntimeError(f"OpenAI failed after {MAX_RETRIES} retries") from last_error
+    response = _request_with_backoff(
+        "OpenAI",
+        lambda: client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=messages,
+            tools=[TOOL_SCHEMA_OPENAI],
+            tool_choice={"type": "function", "function": {"name": "report_signals"}},
+            max_tokens=2048,
+            temperature=0.0,
+            top_p=1.0,
+        ),
+    )
 
     input_tokens = response.usage.prompt_tokens or 0
     output_tokens = response.usage.completion_tokens or 0
@@ -186,7 +203,7 @@ def _score_openai(transcript: Transcript) -> list[Signal]:
 def _score_groq(transcript: Transcript) -> list[Signal]:
     from groq import Groq
 
-    client = Groq(api_key=GROQ_API_KEY, max_retries=5)
+    client = Groq(api_key=GROQ_API_KEY, max_retries=0)
     user_message = _build_user_message(transcript)
 
     messages = [
@@ -195,29 +212,18 @@ def _score_groq(transcript: Transcript) -> list[Signal]:
         {"role": "user", "content": user_message},
     ]
 
-    last_error: Exception | None = None
-    for attempt in range(MAX_RETRIES):
-        try:
-            response = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=messages,
-                tools=[TOOL_SCHEMA_OPENAI],
-                tool_choice={"type": "function", "function": {"name": "report_signals"}},
-                max_tokens=2048,
-                temperature=0.0,
-                top_p=1.0,
-            )
-            break
-        except Exception as e:
-            last_error = e
-            if "rate" in str(e).lower() or "429" in str(e):
-                raise
-            delay = RETRY_BASE_DELAY * (2 ** attempt)
-            logger.warning("Groq LLM error (attempt %d/%d): %s. Retrying in %.1fs",
-                           attempt + 1, MAX_RETRIES, e, delay)
-            time.sleep(delay)
-    else:
-        raise RuntimeError(f"Groq LLM failed after {MAX_RETRIES} retries") from last_error
+    response = _request_with_backoff(
+        "Groq LLM",
+        lambda: client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=messages,
+            tools=[TOOL_SCHEMA_OPENAI],
+            tool_choice={"type": "function", "function": {"name": "report_signals"}},
+            max_tokens=2048,
+            temperature=0.0,
+            top_p=1.0,
+        ),
+    )
 
     input_tokens = response.usage.prompt_tokens or 0
     output_tokens = response.usage.completion_tokens or 0

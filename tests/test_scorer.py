@@ -47,6 +47,7 @@ def _make_transcript(case: EvalCase) -> Transcript:
 
 @pytest.mark.skipif(not _has_api_key, reason="No API key set for configured provider")
 @pytest.mark.skipif(not _active_cases(), reason="All eval cases are placeholders")
+@pytest.mark.api
 @pytest.mark.parametrize(
     "case",
     _active_cases(),

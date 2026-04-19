@@ -6,10 +6,9 @@ import logging
 from pathlib import Path
 
 from app.config import CHUNK_DURATION_SECONDS, CHUNKS_DIR, MAX_RETRIES, RETRY_BASE_DELAY, SAMPLE_RATE
+from app.sentinel import SENTINEL
 
 logger = logging.getLogger(__name__)
-
-SENTINEL = None
 
 
 async def _resolve_stream_url(url: str) -> str:
@@ -45,6 +44,7 @@ async def _wait_for_chunk(chunks_dir: Path, chunk_index: int, timeout: float = 6
     interval = 0.5
     while elapsed < timeout:
         if chunk_path.exists() and chunk_path.stat().st_size > 0:
+            # Give ffmpeg a brief flush window so the segment file is fully closed on disk.
             await asyncio.sleep(0.3)
             return chunk_path
         await asyncio.sleep(interval)

@@ -17,6 +17,7 @@ LLM_PROVIDER: str = os.environ.get("LLM_PROVIDER", "openai")  # "openai" or "gro
 CHUNK_DURATION_SECONDS: int = int(os.environ.get("CHUNK_DURATION", "10"))
 SAMPLE_RATE: int = 16000
 AUDIO_CHANNELS: int = 1
+FILE_MODE_REALTIME: bool = os.environ.get("FILE_MODE_REALTIME", "false").lower() == "true"
 
 INPUT_FILE: str = os.environ.get("INPUT_FILE", "fixtures/sample_stream.mp4")
 STREAM_URL: str = os.environ.get("STREAM_URL", "")

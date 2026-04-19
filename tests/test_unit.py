@@ -1,7 +1,9 @@
 """Unit tests with mocked LLM — no API keys required."""
 from __future__ import annotations
 
+import asyncio
 import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -378,7 +380,7 @@ def test_diarization_empty():
 # ---------------------------------------------------------------------------
 
 def test_slack_should_notify_high_confidence():
-    from app.notifications.slack import CONFIDENCE_THRESHOLD
+    from app.notifications.slack import should_notify
 
     s = Signal(
         commodity="gold", direction="bullish", confidence=0.9,
@@ -386,11 +388,12 @@ def test_slack_should_notify_high_confidence():
         source_chunk_id="x", source_timestamp_start=0, source_timestamp_end=10,
         raw_quote="x",
     )
-    assert s.confidence >= CONFIDENCE_THRESHOLD
+    with patch("app.notifications.slack.SLACK_WEBHOOK_URL", "https://hooks.slack.test"):
+        assert should_notify(s) is True
 
 
 def test_slack_should_not_notify_low_confidence():
-    from app.notifications.slack import CONFIDENCE_THRESHOLD
+    from app.notifications.slack import should_notify
 
     s = Signal(
         commodity="gold", direction="bullish", confidence=0.5,
@@ -398,4 +401,107 @@ def test_slack_should_not_notify_low_confidence():
         source_chunk_id="x", source_timestamp_start=0, source_timestamp_end=10,
         raw_quote="x",
     )
-    assert s.confidence < CONFIDENCE_THRESHOLD
+    with patch("app.notifications.slack.SLACK_WEBHOOK_URL", "https://hooks.slack.test"):
+        assert should_notify(s) is False
+
+
+def test_slack_send_signal_alert_posts_payload():
+    from app.notifications.slack import send_signal_alert
+
+    signal = Signal(
+        commodity="gold",
+        direction="bullish",
+        confidence=0.91,
+        rationale="Gold should benefit from the move.",
+        timeframe="short_term",
+        source_chunk_id="x",
+        source_timestamp_start=0,
+        source_timestamp_end=10,
+        raw_quote="gold rallied on the announcement",
+    )
+
+    response = MagicMock()
+    response.status = 200
+    context_manager = MagicMock()
+    context_manager.__enter__.return_value = response
+
+    with patch("app.notifications.slack.SLACK_WEBHOOK_URL", "https://hooks.slack.test"):
+        with patch("urllib.request.urlopen", return_value=context_manager) as mock_urlopen:
+            send_signal_alert(signal)
+
+    request = mock_urlopen.call_args.args[0]
+    assert request.full_url == "https://hooks.slack.test"
+    payload = json.loads(request.data.decode("utf-8"))
+    assert "Gold" in payload["text"]
+    assert "BULLISH" in payload["text"]
+
+
+# ---------------------------------------------------------------------------
+# Cost tracker
+# ---------------------------------------------------------------------------
+
+def test_cost_tracker_logs_and_sums(tmp_path: Path):
+    from app.cost import tracker
+
+    log_path = tmp_path / "costs.jsonl"
+    with patch.object(tracker, "_log_path", log_path):
+        tracker.log_cost("openai", 100, 0.12, {"chunk": "a"})
+        tracker.log_cost("groq_whisper", 10, 0.08)
+
+        lines = log_path.read_text().strip().splitlines()
+        assert len(lines) == 2
+        assert tracker.total_cost() == pytest.approx(0.20)
+
+
+# ---------------------------------------------------------------------------
+# File ingestion
+# ---------------------------------------------------------------------------
+
+def test_file_stream_produce_chunks_fast_mode(tmp_path: Path):
+    from app.ingestion import file_stream
+    from app.sentinel import SENTINEL
+
+    for i in range(2):
+        (tmp_path / f"chunk_{i:04d}.wav").write_bytes(b"wav")
+
+    async def fake_split_audio(input_file: str | None = None) -> Path:
+        return tmp_path
+
+    queue: asyncio.Queue = asyncio.Queue()
+
+    with patch.object(file_stream, "split_audio", side_effect=fake_split_audio):
+        with patch.object(file_stream, "FILE_MODE_REALTIME", False):
+            with patch("app.ingestion.file_stream.asyncio.sleep", side_effect=AssertionError("sleep should not be called")):
+                asyncio.run(file_stream.produce_chunks(queue))
+
+    items = []
+    while not queue.empty():
+        items.append(queue.get_nowait())
+
+    assert items[0][1] == 0
+    assert items[1][1] == file_stream.CHUNK_DURATION_SECONDS
+    assert items[-1] is SENTINEL
+
+
+def test_file_stream_produce_chunks_realtime_mode_sleeps(tmp_path: Path):
+    from app.ingestion import file_stream
+
+    for i in range(2):
+        (tmp_path / f"chunk_{i:04d}.wav").write_bytes(b"wav")
+
+    async def fake_split_audio(input_file: str | None = None) -> Path:
+        return tmp_path
+
+    sleeps: list[int] = []
+
+    async def fake_sleep(seconds: int) -> None:
+        sleeps.append(seconds)
+
+    queue: asyncio.Queue = asyncio.Queue()
+
+    with patch.object(file_stream, "split_audio", side_effect=fake_split_audio):
+        with patch.object(file_stream, "FILE_MODE_REALTIME", True):
+            with patch("app.ingestion.file_stream.asyncio.sleep", side_effect=fake_sleep):
+                asyncio.run(file_stream.produce_chunks(queue))
+
+    assert sleeps == [file_stream.CHUNK_DURATION_SECONDS]
