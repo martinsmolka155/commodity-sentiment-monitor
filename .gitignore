@@ -11,3 +11,4 @@ dist/
 .venv/
 fixtures/sample_stream.mp4
 fixtures/*.mp4
+.DS_Store
