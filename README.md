@@ -178,12 +178,6 @@ Ticker mapping: WTI → `CL=F`, Brent → `BZ=F`, Gold → `GC=F`, Silver → `S
 
 See [TECHNICAL_DOC.md](TECHNICAL_DOC.md) for a detailed architecture overview, design trade-offs, production improvement roadmap (scalability, SLA, monitoring, security), and evaluation methodology.
 
-## Demo
-
-To record a demo: `asciinema rec demo.cast` while running `docker compose up`, then `asciinema play demo.cast` to replay.
-
-A ready-to-record walkthrough script is available in [DEMO_VIDEO_SCRIPT.md](DEMO_VIDEO_SCRIPT.md).
-
 ## Known Limitations
 
 See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
